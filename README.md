@@ -39,16 +39,22 @@ python sam_test.py --data_dir data --pretrained_model *path_to_model/model.pt --
 
 ## Inference
 To run inference, we need to provide bbox coordinates for the segmentation region in the image (automated). This is how SAM works,i.e. it requires a prompt along with image for prediction. In our case, the prompt is the bbox coordinates. We provide a script to run inference on a single image. To run inference, run the following command:
-```     
+```
 python sam_infer.py --image_path {PATH_TO_IMAGE_OR_DIR} --pretrained_model weights/model.pt --save_dir results
 ```
 
-when  you run the above command, an image window will be opened. You will be asked to draw (click) the top left and bottom right coordinates of the bbox using mouse pointer.  Results will be saved in `save_dir` (default: `outputs/results`). The results include the overlay of predicted and ground truth masks. 
+when you run the above command, an image window will be opened. You will be asked to draw (click) the top left and bottom right coordinates of the bbox using mouse pointer. Results will be saved in `save_dir` (default: `outputs/results`). The results include the overlay of predicted and ground truth masks.
+
+For systems without a GPU (e.g., a CPU-only Mac) you can force CPU inference and skip the manual bounding box by using the `--device` and `--auto_bbox` flags:
+
+```
+python sam_infer.py --image_path {PATH_TO_IMAGE_OR_DIR} --pretrained_model weights/model.pt --save_dir results --device cpu --auto_bbox
+```
 
 The inference command can either take a single image or a directory containing multiple images as input. In case of directory, also provide the extension of the images. For example, if the images are in `.jpg` format, run the following command:
 
 ```
-python sam_infer.py --image_path {PATH_TO_IMAGE_DIR} -extension jpg --pretrained_model weights/model.pt --save_dir results
+python sam_infer.py --image_path {PATH_TO_IMAGE_DIR} -extension jpg --pretrained_model weights/model.pt --save_dir results --device cpu --auto_bbox
 ```
 ## Results
 <p align="center" style="display: flex; justify-content: center; align-items: center;">
