@@ -1,6 +1,6 @@
 # casia-interval-v3 dataset
 import os
-from segment_anything import  sam_model_registry, SamPredictor
+from segment_anything import sam_model_registry, SamPredictor
 import torch
 import numpy as np
 import cv2
@@ -42,7 +42,7 @@ def draw_box_points(image, name='Image', num_points=4):
     return params['points']
     
 
-def infer(image_path, save_dir, pretrained_model, extension='jpg'):
+def infer(image_path, save_dir, pretrained_model, extension='jpg', device="auto", auto_bbox=False):
     
 
     if os.path.isdir(image_path):
@@ -54,7 +54,14 @@ def infer(image_path, save_dir, pretrained_model, extension='jpg'):
         print('image_path is not a valid file or directory')
         exit()
         
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "auto":
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
+
     model_type = 'vit_h'
     checkpoint = pretrained_model
     
@@ -74,10 +81,13 @@ def infer(image_path, save_dir, pretrained_model, extension='jpg'):
         
         input_image = cv2.imread(image_file)
         
-        # use cv2 to get 4 points as a bounding boux from user}
-        bbox = draw_box_points(input_image, name=image_name)
-        # bbox = [(0,0), (input_image.shape[1], input_image.shape[0])]
-        print('BBox coordinates provided by user: ', bbox)
+        if auto_bbox:
+            bbox = [(0, 0), (input_image.shape[1], input_image.shape[0])]
+            print('Using full image as bounding box')
+        else:
+            # use cv2 to get 4 points as a bounding box from user
+            bbox = draw_box_points(input_image, name=image_name)
+            print('BBox coordinates provided by user: ', bbox)
         
         input_image = input_image[:,:,::-1] # convert to RGB
         predictor.set_image(input_image)
@@ -101,16 +111,18 @@ def infer(image_path, save_dir, pretrained_model, extension='jpg'):
 
 
 if __name__ == '__main__':
-    
+
     import argparse
     parser = argparse.ArgumentParser('SAM model inference')
     parser.add_argument('--image_path', type=str, required=True, help='path to an image file or directory of images')
     parser.add_argument('--extension', type=str, default='jpg', help='image file extension, useful if image_path is a directory')
     parser.add_argument('--save_dir', type=str, default='results', help='path to save directory')
     parser.add_argument('--pretrained_model', type=str, default='weights/model.pt', help='path to pretrained model')
+    parser.add_argument('--device', type=str, default='auto', help='device to run on: auto, cpu, cuda, or mps')
+    parser.add_argument('--auto_bbox', action='store_true', help='use the full image as bounding box instead of manual selection')
     # parser.add_argument('--batch_size', type=int, default=2, help='batch size') # does not work with batch size > 1
-    
+
     args = parser.parse_args()
-    
-    infer(args.image_path, args.save_dir, args.pretrained_model, args.extension)
+
+    infer(args.image_path, args.save_dir, args.pretrained_model, args.extension, device=args.device, auto_bbox=args.auto_bbox)
     
